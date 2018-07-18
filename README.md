@@ -2,12 +2,11 @@
 Basic iOS application developed using the ARKit framework to perform various augmented reality 
 processes to a dice asset such as 3D location and plane detection as well as 3D randomized animations.
 
-</br>
 
 Developed using Swift 4 within Xcode 9.4.1. Completed as part of an assignment for a course utilizing basic
 tools within the ARKit framework and introductory concepts of AR environment manipulation and animation.
 
-
+</br>
 
 <h1>Future Enhancements:</h1>
 <ul>
