@@ -96,7 +96,27 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     
-    
+    // Detecting touches
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        // Use ARKit to convert touch to convert to real world location
+        if let touch = touches.first {
+            let touchLocation = touch.location(in: sceneView)
+            
+            // Convert 2D touchLocation to a 3D touchLocation for AR environment
+            let results = sceneView.hitTest(touchLocation, types: .existingPlaneUsingExtent)
+            
+            if !results.isEmpty {
+                // Success
+                print("Touched plane")
+            } else {
+                // Error
+                print("Touched somewhere else")
+            }
+            
+        } else {
+            // No touch was detected
+        }
+    }
     
     
     // Triggered when plane is detected - as anchor
