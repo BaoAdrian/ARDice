@@ -49,21 +49,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Add light to introduce shadowing effect/ depth to object
         sceneView.autoenablesDefaultLighting = true
         
-        // Create a new scene
-        let diceScene = SCNScene(named: "art.scnassets/diceCollada.scn")!
-
-        // Create dice node - searching recursively
-        if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
-
-            diceNode.position = SCNVector3(x: 0, y: 0, z: -0.1)
-
-            sceneView.scene.rootNode.addChildNode(diceNode)
-
-        } else {
-
-            // error
-
-        }
+        
         
     }
     
@@ -105,12 +91,28 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             // Convert 2D touchLocation to a 3D touchLocation for AR environment
             let results = sceneView.hitTest(touchLocation, types: .existingPlaneUsingExtent)
             
-            if !results.isEmpty {
-                // Success
-                print("Touched plane")
-            } else {
-                // Error
-                print("Touched somewhere else")
+            if let hitResult = results.first {
+                // print(hitResult) // Prints coordinates
+                
+                // Create a new scene
+                let diceScene = SCNScene(named: "art.scnassets/diceCollada.scn")!
+                
+                // Create dice node - searching recursively
+                if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
+                    
+                    diceNode.position = SCNVector3(
+                        x: hitResult.worldTransform.columns.3.x,
+                        y: hitResult.worldTransform.columns.3.y + diceNode.boundingSphere.radius,  // Adjusted to sit above plane rather than in the middle of plane
+                        z: hitResult.worldTransform.columns.3.z
+                    )
+                    
+                    sceneView.scene.rootNode.addChildNode(diceNode)
+                    
+                } else {
+                    
+                    // error
+                    
+                }
             }
             
         } else {
