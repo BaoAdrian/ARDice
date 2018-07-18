@@ -20,38 +20,13 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         super.viewDidLoad()
         
         // Used for testing detection of plane
-        self.sceneView.debugOptions = [ARSCNDebugOptions.showFeaturePoints]
+        // self.sceneView.debugOptions = [ARSCNDebugOptions.showFeaturePoints]
         
         // Set the view's delegate
         sceneView.delegate = self
         
-        
-        
-
-        // Create 3D object
-//        let cube = SCNBox(width: 0.1, height: 0.1, length: 0.1, chamferRadius: 0.01)
-//
-//        let sphere = SCNSphere(radius: 0.2)
-//
-//        let material = SCNMaterial()
-//        material.diffuse.contents = UIImage(named: "art.scnassets/8k_moon.jpg")
-//        sphere.materials = [material]
-//
-//        let node = SCNNode()
-//        node.position = SCNVector3(x: 0, y: 0.1, z: -0.5)
-//        node.geometry = sphere
-//
-//        // Place node in sceneView
-//        sceneView.scene.rootNode.addChildNode(node)
-        
-        
-        
-        
-        
         // Add light to introduce shadowing effect/ depth to object
         sceneView.autoenablesDefaultLighting = true
-        
-        
         
     }
     
@@ -84,6 +59,12 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     
+    
+    //MARK: - Dice Rendering Methods
+    
+    
+    
+    
     // Detecting touches
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         // Use ARKit to convert touch to convert to real world location
@@ -96,34 +77,59 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             if let hitResult = results.first {
                 // print(hitResult) // Prints coordinates
                 
-                // Create a new scene
-                let diceScene = SCNScene(named: "art.scnassets/diceCollada.scn")!
+                addDice(atLocation: hitResult)
                 
-                // Create dice node - searching recursively
-                if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
-                    
-                    diceNode.position = SCNVector3(
-                        x: hitResult.worldTransform.columns.3.x,
-                        y: hitResult.worldTransform.columns.3.y + diceNode.boundingSphere.radius,  // Adjusted to sit above plane rather than in the middle of plane
-                        z: hitResult.worldTransform.columns.3.z
-                    )
-                    
-                    diceArray.append(diceNode)
-                    
-                    sceneView.scene.rootNode.addChildNode(diceNode)
-                    
-                    roll(dice: diceNode)
-                    
-                } else {
-                    
-                    // error
-                    
-                }
             }
             
         } else {
             // No touch was detected
         }
+    }
+    
+    
+    func addDice(atLocation location: ARHitTestResult) {
+        // Create a new scene
+        let diceScene = SCNScene(named: "art.scnassets/diceCollada.scn")!
+        
+        // Create dice node - searching recursively
+        if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
+            
+            diceNode.position = SCNVector3(
+                x: location.worldTransform.columns.3.x,
+                y: location.worldTransform.columns.3.y + diceNode.boundingSphere.radius,  // Adjusted to sit above plane rather than in the middle of plane
+                z: location.worldTransform.columns.3.z
+            )
+            
+            diceArray.append(diceNode)
+            
+            sceneView.scene.rootNode.addChildNode(diceNode)
+            
+            roll(dice: diceNode)
+            
+        } else {
+            
+            // error
+            
+        }
+    }
+    
+    
+    
+    
+    
+    //MARK: - Dice Rolling Methods
+    
+    
+    
+    
+    
+    func roll(dice: SCNNode) {
+        // Randomization for rotations of dice used in animation
+        let randomX = Float(arc4random_uniform(4) + 1) * (Float.pi / 2)
+        let randomZ = Float(arc4random_uniform(4) + 1) * (Float.pi / 2)
+        
+        // Animate
+        dice.runAction(SCNAction.rotateBy(x: CGFloat(randomX * 5), y: 0, z: CGFloat(randomZ * 5), duration: 0.5))
     }
     
     func rollAll() {
@@ -136,16 +142,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
     }
     
-    
-    func roll(dice: SCNNode) {
-        // Randomization for rotations of dice used in animation
-        let randomX = Float(arc4random_uniform(4) + 1) * (Float.pi / 2)
-        let randomZ = Float(arc4random_uniform(4) + 1) * (Float.pi / 2)
-        
-        // Animate
-        dice.runAction(SCNAction.rotateBy(x: CGFloat(randomX * 5), y: 0, z: CGFloat(randomZ * 5), duration: 0.5))
-    }
-    
     // Rolls dice when pressed
     @IBAction func rollAgain(_ sender: UIBarButtonItem) {
         rollAll()
@@ -156,46 +152,58 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         rollAll()
     }
     
+    @IBAction func removeAllDice(_ sender: UIBarButtonItem) {
+        
+        if !diceArray.isEmpty {
+            for dice in diceArray {
+                dice.removeFromParentNode()
+            }
+        }
+        
+    }
     
+    
+    //MARK: - ARSceneView Delegate Methods
     
     
     // Triggered when plane is detected - as anchor
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
-        if anchor is ARPlaneAnchor {
-            
-            // Downcast
-            let planeAnchor = anchor as! ARPlaneAnchor
-            
-            // Convert to Scene Plane
-            let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
-            
-            // Create plane node
-            let planeNode = SCNNode()
-            planeNode.position = SCNVector3(x: planeAnchor.center.x, y: 0, z: planeAnchor.center.z)
-            
-            // Rotate plane to become horizontal rather than vertical
-            planeNode.transform = SCNMatrix4MakeRotation(-Float.pi / 2, 1, 0, 0)
-            
-            let gridMaterial = SCNMaterial()
-            gridMaterial.diffuse.contents = UIImage(named: "art.scnassets/grid.png")
-            plane.materials = [gridMaterial]
-            
-            planeNode.geometry = plane
-            
-            // This achievs the same as sceneView.scene.rootNode.addChildNode(planeNode)
-            node.addChildNode(planeNode)
-            
-        } else {
-            // exit
-            return
-        }
+        
+        // Refactored code replacing the commented code below
+        guard let planeAnchor = anchor as? ARPlaneAnchor else {return}
+        
+        let planeNode = createPlane(withPlaneAnchor: planeAnchor)
+        
+        // This achievs the same as sceneView.scene.rootNode.addChildNode(planeNode)
+        node.addChildNode(planeNode)
+
     }
     
     
     
+    //MARK: - Plane Rendering Methods
     
     
     
     
+    func createPlane(withPlaneAnchor planeAnchor: ARPlaneAnchor) -> SCNNode {
+        // Convert to Scene Plane
+        let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
+        
+        // Create plane node
+        let planeNode = SCNNode()
+        planeNode.position = SCNVector3(x: planeAnchor.center.x, y: 0, z: planeAnchor.center.z)
+        
+        // Rotate plane to become horizontal rather than vertical
+        planeNode.transform = SCNMatrix4MakeRotation(-Float.pi / 2, 1, 0, 0)
+        
+        let gridMaterial = SCNMaterial()
+        gridMaterial.diffuse.contents = UIImage(named: "art.scnassets/grid.png")
+        plane.materials = [gridMaterial]
+        
+        planeNode.geometry = plane
+        
+        return planeNode
+    }
     
 }
